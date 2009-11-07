@@ -14,7 +14,9 @@ from dpaste.highlight import pygmentize, guess_code_lexer
 from dpaste.models import Snippet
 
 
-def snippet_new(request, template_name='dpaste/snippet_new.html'):
+def snippet_new(request, **kwargs):
+
+    template_name = kwargs.get('template_name', 'dpaste/snippet_new.html')
 
     if request.method == "POST":
         snippet_form = SnippetForm(data=request.POST, request=request)
@@ -35,7 +37,10 @@ def snippet_new(request, template_name='dpaste/snippet_new.html'):
     )
 
 
-def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.html', is_raw=False):
+def snippet_details(request, snippet_id, **kwargs):
+
+    template_name = kwargs.get('template_name', 'dpaste/snippet_details.html')
+    is_raw = kwargs.get('is_raw', False)
 
     snippet = get_object_or_404(Snippet, secret_id=snippet_id)
 
@@ -75,20 +80,27 @@ def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.h
         return response
 
 
-def snippet_delete(request, snippet_id):
+def snippet_delete(request, snippet_id, **kwargs):
+
     snippet = get_object_or_404(Snippet, secret_id=snippet_id)
+
     try:
         snippet_list = request.session['snippet_list']
     except KeyError:
         return HttpResponseForbidden('You have no recent snippet list, cookie error?')
+
     if not snippet.pk in snippet_list:
         return HttpResponseForbidden('That\'s not your snippet, sucka!')
+
     snippet.delete()
+
     return HttpResponseRedirect(reverse('snippet_new'))
 
 
-def snippet_userlist(request, template_name='dpaste/snippet_list.html'):
-    
+def snippet_userlist(request, **kwargs):
+
+    template_name = kwargs.get('template_name', 'dpaste/snippet_list.html')
+
     try:
         snippet_list = get_list_or_404(Snippet, pk__in=request.session.get('snippet_list', None))
     except ValueError:
@@ -106,7 +118,9 @@ def snippet_userlist(request, template_name='dpaste/snippet_list.html'):
     )
 
 
-def userprefs(request, template_name='dpaste/userprefs.html'):
+def userprefs(request, **kwargs):
+
+    template_name = kwargs.get('template_name', 'dpaste/userprefs.html')
 
     if request.method == 'POST':
         settings_form = UserSettingsForm(request.POST, initial=request.session.get('userprefs', None))
@@ -129,7 +143,9 @@ def userprefs(request, template_name='dpaste/userprefs.html'):
     )
 
 
-def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
+def snippet_diff(request, **kwargs):
+
+    template_name = kwargs.get('template_name', 'dpaste/snippet_diff.html')
 
     if request.GET.get('a').isdigit() and request.GET.get('b').isdigit():
         try:
