@@ -1,5 +1,7 @@
-from dpaste.models import Snippet
 from django.contrib import admin
+
+from dpaste.models import Snippet
+
 
 class SnippetAdmin(admin.ModelAdmin):
     list_display = (
@@ -9,5 +11,6 @@ class SnippetAdmin(admin.ModelAdmin):
         'published',
         'expires',
     )
+
 
 admin.site.register(Snippet, SnippetAdmin)

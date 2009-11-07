@@ -1,15 +1,18 @@
-from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
-from django.template.context import RequestContext
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, HttpResponseForbidden
+import difflib
+
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy as _
-from dpaste.forms import SnippetForm, UserSettingsForm
-from dpaste.models import Snippet
-from dpaste.highlight import pygmentize, guess_code_lexer
 from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, HttpResponseForbidden
+from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
+from django.template.context import RequestContext
 from django.utils import simplejson
-import difflib
+from django.utils.translation import ugettext_lazy as _
+
+from dpaste.forms import SnippetForm, UserSettingsForm
+from dpaste.highlight import pygmentize, guess_code_lexer
+from dpaste.models import Snippet
+
 
 def snippet_new(request, template_name='dpaste/snippet_new.html'):
 
@@ -71,6 +74,7 @@ def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.h
     else:
         return response
 
+
 def snippet_delete(request, snippet_id):
     snippet = get_object_or_404(Snippet, secret_id=snippet_id)
     try:
@@ -81,6 +85,7 @@ def snippet_delete(request, snippet_id):
         return HttpResponseForbidden('That\'s not your snippet, sucka!')
     snippet.delete()
     return HttpResponseRedirect(reverse('snippet_new'))
+
 
 def snippet_userlist(request, template_name='dpaste/snippet_list.html'):
     
@@ -123,6 +128,7 @@ def userprefs(request, template_name='dpaste/userprefs.html'):
         RequestContext(request)
     )
 
+
 def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
 
     if request.GET.get('a').isdigit() and request.GET.get('b').isdigit():
@@ -158,7 +164,8 @@ def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
         template_context,
         RequestContext(request)
     )
-    
+
+
 def guess_lexer(request):
     code_string = request.GET.get('codestring', False)
     response = simplejson.dumps({'lexer': guess_code_lexer(code_string)})

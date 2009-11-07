@@ -1,5 +1,6 @@
-from django.conf.urls.defaults import patterns, url
 from django.conf import settings
+from django.conf.urls.defaults import patterns, url
+
 
 urlpatterns = patterns('',
     url(r'^$', 'dpaste.views.snippet_new', name='snippet_new'),
@@ -9,5 +10,8 @@ urlpatterns = patterns('',
     url(r'^your-settings/$', 'dpaste.views.userprefs', name='snippet_userprefs'),
     url(r'^(?P<snippet_id>[a-zA-Z0-9]{4})/$', 'dpaste.views.snippet_details', name='snippet_details'),
     url(r'^(?P<snippet_id>[a-zA-Z0-9]{4})/delete/$', 'dpaste.views.snippet_delete', name='snippet_delete'),
-    url(r'^(?P<snippet_id>[a-zA-Z0-9]{4})/raw/$', 'dpaste.views.snippet_details', {'template_name': 'dpaste/snippet_details_raw.html', 'is_raw': True}, name='snippet_details_raw'),
+    url(r'^(?P<snippet_id>[a-zA-Z0-9]{4})/raw/$', 'dpaste.views.snippet_details', {
+        'template_name': 'dpaste/snippet_details_raw.html',
+        'is_raw': True
+    }, name='snippet_details_raw'),
 )

@@ -1,15 +1,20 @@
 import datetime
 import difflib
 import random
-import mptt
+
 from django.db import models
 from django.db.models import permalink
 from django.utils.translation import ugettext_lazy as _
+
+import mptt
+
 from dpaste.highlight import LEXER_DEFAULT, pygmentize
+
 
 t = 'abcdefghijkmnopqrstuvwwxyzABCDEFGHIJKLOMNOPQRSTUVWXYZ1234567890'
 def generate_secret_id(length=4):
-    return ''.join([random.choice(t) for i in range(length)]) 
+    return ''.join([random.choice(t) for i in range(length)])
+
 
 class Snippet(models.Model):
     secret_id = models.CharField(_(u'Secret ID'), max_length=4, blank=True)
@@ -44,5 +49,6 @@ class Snippet(models.Model):
 
     def __unicode__(self):
         return '%s' % self.secret_id
+
 
 mptt.register(Snippet, order_insertion_by=['content'])

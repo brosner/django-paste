@@ -1,6 +1,8 @@
 import os
-from distutils.core import setup
+
 from distutils.command.install import INSTALL_SCHEMES
+from distutils.core import setup
+
 
 app_name = 'dpaste'
 app_url = 'http://github.com/bartTC/django-paste/'
@@ -32,6 +34,7 @@ for dirpath, dirnames, filenames in os.walk(app_name):
         prefix = dirpath[len(app_name)+1:] # Strip "app_name/" or "app_name\"
         for f in filenames:
             data_files.append(os.path.join(prefix, f))
+
 
 setup(name='django-'+app_name,
       version=version,

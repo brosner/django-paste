@@ -1,13 +1,17 @@
+import datetime
+
 from django import forms
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from dpaste.models import Snippet
+
 from dpaste.highlight import LEXER_LIST_ALL, LEXER_LIST, LEXER_DEFAULT
-import datetime
+from dpaste.models import Snippet
+
 
 #===============================================================================
 # Snippet Form and Handling
 #===============================================================================
+
 
 EXPIRE_CHOICES = (
     (3600, _(u'In one hour')),
@@ -17,6 +21,7 @@ EXPIRE_CHOICES = (
 )
 
 EXPIRE_DEFAULT = 3600*24*30
+
 
 class SnippetForm(forms.ModelForm):
 
@@ -46,17 +51,17 @@ class SnippetForm(forms.ModelForm):
             self.fields['author'].initial = self.request.session['userprefs'].get('default_name', '')
         except KeyError:
             pass
-        
+
     def save(self, parent=None, *args, **kwargs):
 
         # Set parent snippet
         if parent:
             self.instance.parent = parent
-        
+
         # Add expire datestamp
         self.instance.expires = datetime.datetime.now() + \
             datetime.timedelta(seconds=int(self.cleaned_data['expire_options']))
-        
+
         # Save snippet in the db
         super(SnippetForm, self).save(*args, **kwargs)
 
@@ -84,6 +89,7 @@ class SnippetForm(forms.ModelForm):
 # User Settings
 #===============================================================================
 
+
 USERPREFS_FONT_CHOICES = [(None, _(u'Default'))] + [
     (i, i) for i in sorted((
         'Monaco',
@@ -94,6 +100,7 @@ USERPREFS_FONT_CHOICES = [(None, _(u'Default'))] + [
 ]
 
 USERPREFS_SIZES = [(None, _(u'Default'))] + [(i, '%dpx' % i) for i in range(5, 25)]
+
 
 class UserSettingsForm(forms.Form):
 
