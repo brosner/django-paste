@@ -36,6 +36,8 @@ def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.h
 
     snippet = get_object_or_404(Snippet, secret_id=snippet_id)
 
+    request.session.setdefault('snippet_list', [])
+
     tree = snippet.get_root()
     tree = tree.get_descendants(include_self=True)
 
