@@ -2,6 +2,9 @@ import datetime
 import difflib
 import random
 import mptt
+from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import permalink
 from django.utils.translation import ugettext_lazy as _
@@ -21,9 +24,14 @@ class Snippet(models.Model):
     published = models.DateTimeField(_(u'Published'), blank=True)
     expires = models.DateTimeField(_(u'Expires'), blank=True, help_text='asdf')
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+    group_content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    group_object_id = models.PositiveIntegerField(null=True, blank=True)
+    group = generic.GenericForeignKey('group_content_type', 'group_object_id')
+    
 
     class Meta:
         ordering = ('-published',)
+        unique_together = [('group_content_type', 'group_object_id', 'secret_id')]
 
     def get_linecount(self):
         return len(self.content.splitlines())
@@ -38,9 +46,14 @@ class Snippet(models.Model):
         self.content_highlighted = pygmentize(self.content, self.lexer)
         super(Snippet, self).save()
 
-    @permalink
     def get_absolute_url(self):
-        return ('snippet_details', (self.secret_id,))
+        kwargs = {'snippet_id': self.secret_id}
+        if self.group:
+            bridge = self.group.content_bridge
+            url = bridge.reverse('snippet_details', self.group, kwargs=kwargs)
+        else:
+            url = reverse('snippet_details', kwargs=kwargs)
+        return url
 
     def __unicode__(self):
         return '%s' % self.secret_id

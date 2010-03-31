@@ -47,7 +47,7 @@ class SnippetForm(forms.ModelForm):
         except KeyError:
             pass
         
-    def save(self, parent=None, *args, **kwargs):
+    def save(self, parent=None, group=None, *args, **kwargs):
 
         # Set parent snippet
         if parent:
@@ -56,6 +56,10 @@ class SnippetForm(forms.ModelForm):
         # Add expire datestamp
         self.instance.expires = datetime.datetime.now() + \
             datetime.timedelta(seconds=int(self.cleaned_data['expire_options']))
+        
+        # Associate with group if in context
+        if group:
+            group.associate(self.instance)
         
         # Save snippet in the db
         super(SnippetForm, self).save(*args, **kwargs)

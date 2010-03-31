@@ -11,19 +11,46 @@ from django.core.urlresolvers import reverse
 from django.utils import simplejson
 import difflib
 
+def group_and_bridge(request):
+    """
+    Given the request we can depend on the GroupMiddleware to provide the
+    group and bridge.
+    """
+
+    # be group aware
+    group = getattr(request, 'group', None)
+    if group:
+        bridge = request.bridge
+    else:
+        bridge = None
+
+    return group, bridge
+
+def group_context(group, bridge):
+    # @@@ use bridge
+    ctx = {
+        'group': group,
+    }
+    if group:
+        ctx['group_base'] = bridge.group_base_template()
+    return ctx
+
 def snippet_new(request, template_name='dpaste/snippet_new.html'):
+
+    group, bridge = group_and_bridge(request)
 
     if request.method == "POST":
         snippet_form = SnippetForm(data=request.POST, request=request)
         if snippet_form.is_valid():
-            request, new_snippet = snippet_form.save()
+            request, new_snippet = snippet_form.save(group=group)
             return HttpResponseRedirect(new_snippet.get_absolute_url())
     else:
         snippet_form = SnippetForm(request=request)
 
-    template_context = {
+    template_context = group_context(group, bridge)
+    template_context.update({
         'snippet_form': snippet_form,
-    }
+    })
 
     return render_to_response(
         template_name,
@@ -34,7 +61,14 @@ def snippet_new(request, template_name='dpaste/snippet_new.html'):
 
 def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.html', is_raw=False):
 
-    snippet = get_object_or_404(Snippet, secret_id=snippet_id)
+    group, bridge = group_and_bridge(request)
+
+    # Make queryset suitable for getting the right snippet
+    if group:
+        snippets = group.content_objects(Snippet)
+    else:
+        snippets = Snippet.objects.filter(group_object_id=None)
+    snippet = get_object_or_404(snippets, secret_id=snippet_id)
 
     request.session.setdefault('snippet_list', [])
 
@@ -49,17 +83,18 @@ def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.h
     if request.method == "POST":
         snippet_form = SnippetForm(data=request.POST, request=request, initial=new_snippet_initial)
         if snippet_form.is_valid():
-            request, new_snippet = snippet_form.save(parent=snippet)
+            request, new_snippet = snippet_form.save(parent=snippet, group=group)
             return HttpResponseRedirect(new_snippet.get_absolute_url())
     else:
         snippet_form = SnippetForm(initial=new_snippet_initial, request=request)
-
-    template_context = {
+    
+    template_context = group_context(group, bridge)
+    template_context.update({
         'snippet_form': snippet_form,
         'snippet': snippet,
         'lines': range(snippet.get_linecount()),
         'tree': tree,
-    }
+    })
 
     response = render_to_response(
         template_name,
@@ -74,7 +109,13 @@ def snippet_details(request, snippet_id, template_name='dpaste/snippet_details.h
         return response
 
 def snippet_delete(request, snippet_id):
-    snippet = get_object_or_404(Snippet, secret_id=snippet_id)
+    group, bridge = group_and_bridge(request)
+    # Make queryset suitable for getting the right snippet
+    if group:
+        snippets = group.content_objects(Snippet)
+    else:
+        snippets = Snippet.objects.filter(group_object_id=None)
+    snippet = get_object_or_404(snippets, secret_id=snippet_id)
     try:
         snippet_list = request.session['snippet_list']
     except KeyError:
@@ -85,9 +126,17 @@ def snippet_delete(request, snippet_id):
     return HttpResponseRedirect(reverse('snippet_new'))
 
 def snippet_userlist(request, template_name='dpaste/snippet_list.html'):
+
+    group, bridge = group_and_bridge(request)
+
+    # Make queryset suitable for getting the right snippet
+    if group:
+        snippets = group.content_objects(Snippet)
+    else:
+        snippets = Snippet.objects.filter(group_object_id=None)
     
     try:
-        snippet_list = get_list_or_404(Snippet, pk__in=request.session.get('snippet_list', None))
+        snippet_list = get_list_or_404(snippets, pk__in=request.session.get('snippet_list', None))
     except ValueError:
         snippet_list = None
                 
@@ -105,6 +154,8 @@ def snippet_userlist(request, template_name='dpaste/snippet_list.html'):
 
 def userprefs(request, template_name='dpaste/userprefs.html'):
 
+    group, bridge = group_and_bridge(request)
+
     if request.method == 'POST':
         settings_form = UserSettingsForm(request.POST, initial=request.session.get('userprefs', None))
         if settings_form.is_valid():
@@ -114,10 +165,11 @@ def userprefs(request, template_name='dpaste/userprefs.html'):
         settings_form = UserSettingsForm(initial=request.session.get('userprefs', None))
         settings_saved = False
 
-    template_context = {
+    template_context = group_context(group, bridge)
+    template_context.update({
         'settings_form': settings_form,
         'settings_saved': settings_saved,
-    }
+    })
 
     return render_to_response(
         template_name,
@@ -130,9 +182,15 @@ def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
     a, b = request.GET.get('a'), request.GET.get('b')
 
     if (a and b) and (a.isdigit() and b.isdigit()):
+        group, bridge = group_and_bridge(request)
+        # Make queryset suitable for getting the right snippet
+        if group:
+            snippets = group.content_objects(Snippet)
+        else:
+            snippets = Snippet.objects.filter(group_object_id=None)
         try:
-            fileA = Snippet.objects.get(pk=int(a))
-            fileB = Snippet.objects.get(pk=int(b))
+            fileA = snippets.get(pk=int(a))
+            fileB = snippets.get(pk=int(b))
         except ObjectDoesNotExist:
             return HttpResponseBadRequest(u'Selected file(s) does not exist.')
     else:
@@ -151,11 +209,12 @@ def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
     else:
         difftext = _(u'No changes were made between this two files.')
 
-    template_context = {
+    template_context = group_context(group, bridge)
+    template_context.update({
         'difftext': difftext,
         'fileA': fileA,
         'fileB': fileB,
-    }
+    })
 
     return render_to_response(
         template_name,
