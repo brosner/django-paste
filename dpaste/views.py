@@ -125,10 +125,12 @@ def userprefs(request, template_name='dpaste/userprefs.html'):
 
 def snippet_diff(request, template_name='dpaste/snippet_diff.html'):
 
-    if request.GET.get('a').isdigit() and request.GET.get('b').isdigit():
+    a, b = request.GET.get('a'), request.GET.get('b')
+
+    if (a and b) and (a.isdigit() and b.isdigit()):
         try:
-            fileA = Snippet.objects.get(pk=int(request.GET.get('a')))
-            fileB = Snippet.objects.get(pk=int(request.GET.get('b')))
+            fileA = Snippet.objects.get(pk=int(a))
+            fileB = Snippet.objects.get(pk=int(b))
         except ObjectDoesNotExist:
             return HttpResponseBadRequest(u'Selected file(s) does not exist.')
     else:
